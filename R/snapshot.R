@@ -526,40 +526,41 @@ renv_snapshot_report_actions <- function(actions, old, new) {
   if (empty(old))
     return(invisible())
 
-  # report changes to other fields
-  squish <- function(item) {
-
-    squished <- case(
-      empty(item)     ~ "",
-      !is_named(item) ~ paste(item, collapse = ", "),
-      paste(names(item), item, sep = "=", collapse = ", ")
-    )
-
-    if (!nzchar(squished))
-      return("<empty>")
-
-    sprintf("[%s]", trunc(squished, 32))
-
-  }
-
-  # only report packages which are being modified; not added / removed
-  keep <- names(actions)[actions %in% c("upgrade", "downgrade", "crossgrade")]
-  renv_records(old) <- renv_records(old)[keep]
-  renv_records(new) <- renv_records(new)[keep]
-
-  # perform the diff
-  diff <- renv_lockfile_diff(old, new, function(lhs, rhs) {
-    paste(squish(lhs), squish(rhs), sep = " => ")
-  })
-
-  if (empty(diff))
-    return(invisible())
-
-  # report it
-  writeLines("The following lockfile fields will be updated:\n")
-  output <- stack()
-  renv_lockfile_write_internal(diff, delim = ": ", emitter = output$push)
-  writeLines(paste("  ", output$data(), sep = ""))
+  # # TODO: not necessary anymore?
+  # # report changes to other fields
+  # squish <- function(item) {
+  #
+  #   squished <- case(
+  #     empty(item)     ~ "",
+  #     !is_named(item) ~ paste(item, collapse = ", "),
+  #     paste(names(item), item, sep = "=", collapse = ", ")
+  #   )
+  #
+  #   if (!nzchar(squished))
+  #     return("<empty>")
+  #
+  #   sprintf("[%s]", trunc(squished, 32))
+  #
+  # }
+  #
+  # # only report packages which are being modified; not added / removed
+  # keep <- names(actions)[actions %in% c("upgrade", "downgrade", "crossgrade")]
+  # renv_records(old) <- renv_records(old)[keep]
+  # renv_records(new) <- renv_records(new)[keep]
+  #
+  # # perform the diff
+  # diff <- renv_lockfile_diff(old, new, function(lhs, rhs) {
+  #   paste(squish(lhs), squish(rhs), sep = " => ")
+  # })
+  #
+  # if (empty(diff))
+  #   return(invisible())
+  #
+  # # report it
+  # writeLines("The following lockfile fields will be updated:\n")
+  # output <- stack()
+  # renv_lockfile_write_internal(diff, delim = ": ", emitter = output$push)
+  # writeLines(paste("  ", output$data(), sep = ""))
 
 }
 # nocov end

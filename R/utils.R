@@ -288,3 +288,9 @@ remap <- function(x, map) {
   remapped
 
 }
+
+header <- function(label, n = 78L) {
+  n <- max(0, n - nchar(label) - 3L)
+  tail <- paste(rep.int("=", n), collapse = "")
+  paste("#", label, tail)
+}

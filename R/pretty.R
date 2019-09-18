@@ -60,52 +60,68 @@ renv_pretty_print_records_pair <- function(before,
   nm <- renv_vector_intersect(names(before), names(after))
   before <- before[nm]; after <- after[nm]
 
-  formatted <- .mapply(function(lhs, rhs) {
+  # compute groups
+  labels <- mapply(function(lhs, rhs) {
+    if (lhs[["Source"]] != rhs[["Source"]])
+      "(Changed Source)"
+    else if (!is.null(lhs[["Repository"]]))
+      lhs[["Repository"]]
+    else
+      lhs[["Source"]]
+  }, before, after)
 
-    # TODO: how should we report multiple field changes?
-    fields <- c("Version", "Source", "RemoteRef", "RemoteSha")
-    for (field in fields) {
-
-      lhsf <- lhs[[field]]; rhsf <- rhs[[field]]
-      if (identical(lhsf, rhsf))
-        next
-
-      # report source changes as-is
-      if (identical(field, "Source")) {
-        fmt <- "  [src: %s -> %s]"
-        return(sprintf(fmt, lhsf, rhsf))
-      }
-
-      # report ref changes as-is
-      if (identical(field, "RemoteRef")) {
-        fmt <- "  [ref: %s -> %s]"
-        return(sprintf(fmt, lhsf, rhsf))
-      }
-
-      # use short-form for sha
-      if (identical(field, "RemoteSha")) {
-        ref  <- lhs[["RemoteRef"]]
-        lhsf <- substring(lhsf, 1L, 8L)
-        rhsf <- substring(rhsf, 1L, 8L)
-        fmt  <- "  [%s: %s -> %s]"
-        return(sprintf(fmt, ref, lhsf, rhsf))
-      }
-
-      return(sprintf("  [%s -> %s]", lhsf, rhsf))
-    }
-
-    # TODO: can we report this better?
-    "  [? -> ?]"
-
-  }, list(before, after), NULL)
-
-  names(formatted) <- sprintf("  %s", extract_chr(before, "Package"))
+  # report changes for each group
+  pairs <- mapply(list, before, after, SIMPLIFY = FALSE)
+  grouped <- split(pairs, labels)
 
   preamble %&&% writeLines(preamble)
-  print.simple.list(formatted)
-  writeLines("")
+  enumerate(grouped, renv_pretty_print_records_impl)
   postamble %&&% writeLines(postamble)
   postamble %&&% writeLines("")
 
   invisible(NULL)
+}
+
+renv_pretty_print_records_impl <- function(source, pairs) {
+
+  lhs <- extract(pairs, 1L); rhs <- extract(pairs, 2L)
+
+  # report remote fields if available
+  # TODO: avoid hard-coding here
+  remotes <- c("git", "github", "gitlab", "bitbucket")
+  formatted <- if (source == "(Changed Source)") {
+
+    fsrc <- function(item) item$Repository %||% item$Source
+    fref <- function(item) item$RemoteRef %||% item$Version
+
+    sprintf(
+      "[%s::%s -> %s::%s]",
+      map_chr(lhs, fsrc), map_chr(lhs, fref),
+      map_chr(rhs, fsrc), map_chr(lhs, fref)
+    )
+
+  } else if (tolower(source) %in% remotes) {
+    sprintf(
+      "[%s: %s -> %s]",
+      extract_chr(lhs, "RemoteRef"),
+      substring(extract_chr(lhs, "RemoteSha"), 1L, 8L),
+      substring(extract_chr(rhs, "RemoteSha"), 1L, 8L)
+    )
+  } else {
+    sprintf(
+      "%s -> %s",
+      format(extract_chr(lhs, "Version")),
+      format(extract_chr(rhs, "Version"))
+    )
+  }
+
+  # add package names
+  packages <- extract_chr(lhs, "Package")
+  all <- paste(format(packages), formatted, sep = "  ")
+
+  # print with header
+  text <- c(header(source, 40L), all)
+  writeLines(text)
+  writeLines("")
+
 }
