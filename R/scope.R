@@ -147,3 +147,12 @@ renv_scope_rtools <- function() {
 
 }
 # nocov end
+
+# nocov start
+renv_scope_rspm <- function(.envir = NULL) {
+
+  .envir <- .envir %||% parent.frame()
+  repos <- getOption("repos")
+  lapply(repos, renv)
+
+}

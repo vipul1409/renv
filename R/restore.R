@@ -182,6 +182,8 @@ renv_restore_begin <- function(project = NULL,
                                recursive = TRUE)
 {
 
+  renv_scope_rspm(.envir = parent.frame())
+
   renv_global_set("restore.state", env(
 
     # the active project (if any) used for restore
