@@ -85,7 +85,7 @@ renv_file_copy_dir_rsync <- function(source, target) {
 
 renv_file_copy_dir_cp <- function(source, target) {
   source <- sub("/*$", "/", source)
-  args <- c("-pPR", shQuote(source), shQuote(target))
+  args <- c("-pR", shQuote(source), shQuote(target))
   renv_system_exec("cp", args, action = "copying directory")
 }
 
